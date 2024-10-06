@@ -42,7 +42,7 @@ CREATE TABLE Budgets (
     id VARCHAR(36) PRIMARY KEY,                      -- Unique identifier for the budget (UUID)
     user_id VARCHAR(36) NOT NULL,                    -- User ID associated with the budget (Foreign Key)
     name VARCHAR(100) NOT NULL,                      -- Name of the budget
-    limit DECIMAL(10, 2) NOT NULL CHECK (limit >= 0), -- Limit amount of the budget
+    budget_limit DECIMAL(10, 2) NOT NULL CHECK (budget_limit >= 0), -- Limit amount of the budget
     category_id VARCHAR(36) NOT NULL,                -- Category ID associated with the budget (Foreign Key)
     period ENUM('weekly', 'monthly', 'yearly') NOT NULL, -- Budget period
     FOREIGN KEY (user_id) REFERENCES Users(id),     -- Foreign key constraint
