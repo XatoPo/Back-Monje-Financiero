@@ -16,6 +16,14 @@ CREATE TABLE Users (
 
 CREATE INDEX idx_user_email ON Users(email);
 
+CREATE TABLE Categories (
+    id VARCHAR(36) PRIMARY KEY,                      -- Unique identifier for the category (UUID)
+    user_id VARCHAR(36) NOT NULL,                    -- User ID associated with the category (Foreign Key)
+    name VARCHAR(100) NOT NULL,                      -- Name of the category
+    color VARCHAR(7) NOT NULL,                       -- Color associated with the category (e.g., HEX code)
+    icon_url VARCHAR(255)                            -- URL of the category icon
+);
+
 CREATE TABLE Expenses (
     id VARCHAR(36) PRIMARY KEY,                      -- Unique identifier for the expense (UUID)
     user_id VARCHAR(36) NOT NULL,                    -- User ID associated with the expense (Foreign Key)
@@ -42,14 +50,6 @@ CREATE TABLE Budgets (
 );
 
 CREATE INDEX idx_budgets_category ON Budgets(category_id);
-
-CREATE TABLE Categories (
-    id VARCHAR(36) PRIMARY KEY,                      -- Unique identifier for the category (UUID)
-    user_id VARCHAR(36) NOT NULL,                    -- User ID associated with the category (Foreign Key)
-    name VARCHAR(100) NOT NULL,                      -- Name of the category
-    color VARCHAR(7) NOT NULL,                       -- Color associated with the category (e.g., HEX code)
-    icon_url VARCHAR(255)                            -- URL of the category icon
-);
 
 CREATE TABLE Reports (
     id VARCHAR(36) PRIMARY KEY,                      -- Unique identifier for the report (UUID)
