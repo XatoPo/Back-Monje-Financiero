@@ -2,6 +2,7 @@ import express from "express";
 import { pool } from "./db.js";
 
 const app = express();
+app.use(express.json());
 
 app.get("/", (req, res) => {
     res.send("Monje Financiero");
@@ -21,7 +22,20 @@ app.get("/usersTest", async (req, res) => {
     res.json(result);
 });
 
-app.post
+app.post("/userTestInsert", async (req, res) => {
+    const { id, name, email, password, date_of_birth, profile_image_url } = req.body;
+    try {
+        const [result] = await pool.query(
+            "INSERT INTO users (id, name, email, password, date_of_birth, profile_image_url) VALUES (?, ?, ?, ?, ?, ?)", 
+            [id, name, email, password, date_of_birth, profile_image_url]
+        );
+        console.log(result);
+        res.json(result);
+    } catch (error) {
+        console.error('Error details:', error);
+        res.status(500).json({ error: 'Error inserting user' });
+    }
+});
 
 app.listen(3000, () => {
     console.log("Servidor escuchando en el puerto 3000");

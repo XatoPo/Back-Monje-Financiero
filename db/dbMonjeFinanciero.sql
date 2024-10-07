@@ -141,3 +141,21 @@ INSERT INTO Meta (id, user_id, target_amount, achieved_amount, deadline) VALUES
 ('MT008', 'US001', 2700.00, 1350.00, '2025-07-31'),
 ('MT009', 'US001', 3000.00, 1500.00, '2025-08-31'),
 ('MT010', 'US001', 3200.00, 1600.00, '2025-09-30');
+
+-- Procedures
+DELIMITER //
+
+CREATE PROCEDURE InsertUser(
+    IN p_id VARCHAR(50),
+    IN p_name VARCHAR(100),
+    IN p_email VARCHAR(100),
+    IN p_password VARCHAR(100),
+    IN p_date_of_birth DATE,
+    IN p_profile_image_url VARCHAR(255)
+)
+BEGIN
+    INSERT INTO users (id, name, email, password, date_of_birth, profile_image_url)
+    VALUES (p_id, p_name, p_email, p_password, p_date_of_birth, p_profile_image_url);
+END //
+
+DELIMITER ;
