@@ -85,16 +85,16 @@ CREATE TABLE Budgets (
 );
 
 INSERT INTO Budgets (id, user_id, name, budget_limit, category_id, period) VALUES
-('BU001', 'US001', 'Ahorros Mensuales', 500.00, 'US001', 'monthly'),
-('BU002', 'US001', 'Gastos de Comida', 300.00, '2', 'monthly'),
-('BU003', 'US001', 'Viajes', 1500.00, '9', 'yearly'),
-('BU004', 'US001', 'Educación', 600.00, '6', 'monthly'),
-('BU005', 'US001', 'Entretenimiento', 200.00, '3', 'monthly'),
-('BU006', 'US001', 'Salud', 250.00, '4', 'monthly'),
-('BU007', 'US001', 'Hogar', 800.00, '5', 'monthly'),
-('BU008', 'US001', 'Tecnología', 1200.00, '10', 'yearly'),
-('BU009', 'US001', 'Compras', 1000.00, '7', 'yearly'),
-('BU010', 'US001', 'Gastos Varios', 400.00, '8', 'monthly');
+('BU001', 'US001', 'Ahorros Mensuales', 500.00, 'CT001', 'monthly'),
+('BU002', 'US001', 'Gastos de Comida', 300.00, 'CT002', 'monthly'),
+('BU003', 'US001', 'Viajes', 1500.00, 'CT009', 'yearly'),
+('BU004', 'US001', 'Educación', 600.00, 'CT006', 'monthly'),
+('BU005', 'US001', 'Entretenimiento', 200.00, 'CT003', 'monthly'),
+('BU006', 'US001', 'Salud', 250.00, 'CT004', 'monthly'),
+('BU007', 'US001', 'Hogar', 800.00, 'CT005', 'monthly'),
+('BU008', 'US001', 'Tecnología', 1200.00, 'CT0010', 'yearly'),
+('BU009', 'US001', 'Compras', 1000.00, 'CT007', 'yearly'),
+('BU010', 'US001', 'Gastos Varios', 400.00, 'CT008', 'monthly');
 
 -- Crear tabla Reports
 CREATE TABLE Reports (
