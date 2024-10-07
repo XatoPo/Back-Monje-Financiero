@@ -23,7 +23,7 @@ CREATE TABLE Categories (
     user_id VARCHAR(36) NOT NULL,                    -- User ID associated with the category (Foreign Key)
     name VARCHAR(100) NOT NULL,                      -- Name of the category
     color VARCHAR(7) NOT NULL,                       -- Color associated with the category (e.g., HEX code)
-    icon_text CHAR(1),                                -- Text emoji for icon category
+    icon_text VARCHAR(10),                           -- Text emoji for icon category
     FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
 );
 
@@ -252,7 +252,7 @@ CREATE PROCEDURE InsertCategory(
     IN p_user_id VARCHAR(36),
     IN p_name VARCHAR(100),
     IN p_color VARCHAR(7),
-    IN p_icon_text CHAR(1)
+    IN p_icon_text VARCHAR(10)
 )
 BEGIN
     DECLARE new_id VARCHAR(36);
@@ -294,7 +294,7 @@ CREATE PROCEDURE UpdateCategory(
     IN p_id VARCHAR(36),
     IN p_name VARCHAR(100),
     IN p_color VARCHAR(7),
-    IN p_icon_text CHAR(1)
+    IN p_icon_text VARCHAR(10)
 )
 BEGIN
     IF EXISTS (SELECT 1 FROM Categories WHERE id = p_id) THEN
