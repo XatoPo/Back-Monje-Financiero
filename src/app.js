@@ -24,6 +24,4 @@ app.use("/meta", metaRoutes);
 
 app.listen(PORT, () => {
     console.log("Servidor escuchando en el puerto", PORT);
-    console.log('DB_HOST:', process.env.DB_HOST);
-    console.log('DB_USER:', process.env.DB_USER);
 });
