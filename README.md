@@ -1,2 +1,2 @@
 # Back-Monje-Financiero
-BackEnd API para mi aplicativo movil
+BackEnd API para mi aplicativo mobile
