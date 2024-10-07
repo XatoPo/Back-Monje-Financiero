@@ -190,14 +190,16 @@ DELIMITER //
 
 CREATE PROCEDURE LoginUser(
     IN p_email VARCHAR(100),
-    IN p_password VARCHAR(255)
+    IN p_password VARCHAR(255),
+    OUT p_user_id VARCHAR(36)
 )
 BEGIN
     DECLARE user_count INT;
 
-    SELECT COUNT(*) INTO user_count FROM Users WHERE email = p_email AND password = p_password;
+    -- Verificamos si el usuario existe y la contraseña coincide
+    SELECT id INTO p_user_id FROM Users WHERE email = p_email AND password = p_password;
 
-    IF user_count = 0 THEN
+    IF p_user_id IS NULL THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Invalid email or password.';
     END IF;
 END //

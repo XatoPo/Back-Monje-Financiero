@@ -23,8 +23,20 @@ export const getUser = async (req, res) => {
 export const loginUser = async (req, res) => {
     const { email, password } = req.body;
     try {
-        const [result] = await pool.query("CALL LoginUser(?, ?)", [email, password]);
-        res.status(200).json(result);
+        // Ejecuta la consulta con el nuevo parámetro de salida
+        await pool.query("CALL LoginUser(?, ?, @user_id)", [email, password]);
+        
+        // Obtiene el valor del parámetro de salida
+        const [userIdRow] = await pool.query("SELECT @user_id AS user_id");
+
+        if (userIdRow[0].user_id) {
+            res.status(200).json({
+                success: true,
+                userId: userIdRow[0].user_id
+            });
+        } else {
+            res.status(401).json({ error: 'Invalid email or password.' });
+        }
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
