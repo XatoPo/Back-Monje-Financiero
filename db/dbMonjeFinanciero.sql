@@ -20,7 +20,7 @@ CREATE TABLE Categories (
     user_id VARCHAR(36) NOT NULL,                    -- User ID associated with the category (Foreign Key)
     name VARCHAR(100) NOT NULL,                      -- Name of the category
     color VARCHAR(7) NOT NULL,                       -- Color associated with the category (e.g., HEX code)
-    icon_url VARCHAR(255)                            -- URL of the category icon
+    icon_text CHAR(1)                                -- Text emoji for icon category
 );
 
 -- Crear tabla Expenses
@@ -71,28 +71,28 @@ CREATE TABLE Meta (
 
 -- Test Data
 INSERT INTO Users (id, name, email, password, date_of_birth, profile_image_url) VALUES
-('US001', 'Flavio Villanueva', 'flavio@example.com', 'hashedpassword1', '1990-01-01', 'https://example.com/image1.jpg'),
-('US002', 'Carlos Perez', 'carlos@example.com', 'hashedpassword2', '1992-02-02', 'https://example.com/image2.jpg'),
-('US003', 'Maria Lopez', 'maria@example.com', 'hashedpassword3', '1993-03-03', 'https://example.com/image3.jpg'),
-('US004', 'Ana Garcia', 'ana@example.com', 'hashedpassword4', '1988-04-04', 'https://example.com/image4.jpg'),
-('US005', 'Jose Martinez', 'jose@example.com', 'hashedpassword5', '1985-05-05', 'https://example.com/image5.jpg'),
-('US006', 'Laura Sanchez', 'laura@example.com', 'hashedpassword6', '1991-06-06', 'https://example.com/image6.jpg'),
-('US007', 'Ricardo Torres', 'ricardo@example.com', 'hashedpassword7', '1987-07-07', 'https://example.com/image7.jpg'),
-('US008', 'Patricia Jimenez', 'patricia@example.com', 'hashedpassword8', '1994-08-08', 'https://example.com/image8.jpg'),
-('US009', 'Luis Ramirez', 'luis@example.com', 'hashedpassword9', '1995-09-09', 'https://example.com/image9.jpg'),
-('US010', 'Sofia Gonzalez', 'sofia@example.com', 'hashedpassword10', '1996-10-10', 'https://example.com/image10.jpg');
+('US001', 'Flavio Villanueva', 'flavio@example.com', 'hashedpassword1', '1990-01-01', 'https://i.pravatar.cc/300'),
+('US002', 'Carlos Perez', 'carlos@example.com', 'hashedpassword2', '1992-02-02', 'https://i.pravatar.cc/300'),
+('US003', 'Maria Lopez', 'maria@example.com', 'hashedpassword3', '1993-03-03', 'https://i.pravatar.cc/300'),
+('US004', 'Ana Garcia', 'ana@example.com', 'hashedpassword4', '1988-04-04', 'https://i.pravatar.cc/300'),
+('US005', 'Jose Martinez', 'jose@example.com', 'hashedpassword5', '1985-05-05', 'https://i.pravatar.cc/300'),
+('US006', 'Laura Sanchez', 'laura@example.com', 'hashedpassword6', '1991-06-06', 'https://i.pravatar.cc/300'),
+('US007', 'Ricardo Torres', 'ricardo@example.com', 'hashedpassword7', '1987-07-07', 'https://i.pravatar.cc/300'),
+('US008', 'Patricia Jimenez', 'patricia@example.com', 'hashedpassword8', '1994-08-08', 'https://i.pravatar.cc/300'),
+('US009', 'Luis Ramirez', 'luis@example.com', 'hashedpassword9', '1995-09-09', 'https://i.pravatar.cc/300'),
+('US010', 'Sofia Gonzalez', 'sofia@example.com', 'hashedpassword10', '1996-10-10', 'https://i.pravatar.cc/300');
 
-INSERT INTO Categories (id, user_id, name, color, icon_url) VALUES
-('CT001', 'US001', 'Alimentación', '#FF5733', 'https://example.com/icon1.png'),
-('CT002', 'US001', 'Transporte', '#33FF57', 'https://example.com/icon2.png'),
-('CT003', 'US001', 'Entretenimiento', '#3357FF', 'https://example.com/icon3.png'),
-('CT004', 'US001', 'Salud', '#F5FF33', 'https://example.com/icon4.png'),
-('CT005', 'US001', 'Hogar', '#FF33B5', 'https://example.com/icon5.png'),
-('CT006', 'US001', 'Educación', '#33FFED', 'https://example.com/icon6.png'),
-('CT007', 'US001', 'Compras', '#B533FF', 'https://example.com/icon7.png'),
-('CT008', 'US001', 'Trabajo', '#FF33A1', 'https://example.com/icon8.png'),
-('CT009', 'US001', 'Viajes', '#FFC300', 'https://example.com/icon9.png'),
-('CT010', 'US001', 'Tecnología', '#C70039', 'https://example.com/icon10.png');
+INSERT INTO Categories (id, user_id, name, color, icon_text) VALUES
+('CT001', 'US001', 'Alimentación', '#FF5733', '🍔'),
+('CT002', 'US001', 'Transporte', '#33FF57', '🚗'),
+('CT003', 'US001', 'Entretenimiento', '#3357FF', '🎬'),
+('CT004', 'US001', 'Salud', '#F5FF33', '💊'),
+('CT005', 'US001', 'Hogar', '#FF33B5', '🏠'),
+('CT006', 'US001', 'Educación', '#33FFED', '📚'),
+('CT007', 'US001', 'Compras', '#B533FF', '🛍️'),
+('CT008', 'US001', 'Trabajo', '#FF33A1', '💼'),
+('CT009', 'US001', 'Viajes', '#FFC300', '✈️'),
+('CT010', 'US001', 'Tecnología', '#C70039', '💻');
 
 INSERT INTO Expenses (id, user_id, description, amount, category_id, date, is_recurring) VALUES
 ('EP001', 'US001', 'Compra de frutas', 20.00, 'CT001', '2024-01-15', FALSE),
