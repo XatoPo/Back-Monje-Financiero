@@ -92,7 +92,7 @@ INSERT INTO Budgets (id, user_id, name, budget_limit, category_id, period) VALUE
 ('BU005', 'US001', 'Entretenimiento', 200.00, 'CT003', 'monthly'),
 ('BU006', 'US001', 'Salud', 250.00, 'CT004', 'monthly'),
 ('BU007', 'US001', 'Hogar', 800.00, 'CT005', 'monthly'),
-('BU008', 'US001', 'Tecnología', 1200.00, 'CT0010', 'yearly'),
+('BU008', 'US001', 'Tecnología', 1200.00, 'CT010', 'yearly'),
 ('BU009', 'US001', 'Compras', 1000.00, 'CT007', 'yearly'),
 ('BU010', 'US001', 'Gastos Varios', 400.00, 'CT008', 'monthly');
 
