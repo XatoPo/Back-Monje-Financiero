@@ -1,39 +1,26 @@
 import express from "express";
-import { pool } from "./db.js";
 import { PORT } from "./config.js";
+import usersRoutes from "./routes/users.js";
+import categoriesRoutes from "./routes/categories.js";
+import expensesRoutes from "./routes/expenses.js";
+import budgetsRoutes from "./routes/budgets.js";
+import reportsRoutes from "./routes/reports.js";
+import metaRoutes from "./routes/meta.js";
 
 const app = express();
 app.use(express.json());
 
 app.get("/", (req, res) => {
-    res.send("Monje Financiero");
+    res.send("Monje Financiero API");
 });
 
-app.get("/ping", async (req, res) => {
-    const [result] = await pool.query(`SELECT "hello world" as RESULT`);
-    console.log(result);
-    //res.send("Monje Financiero - Ping");
-    res.json(result);
-});
-
-app.get("/usersTest", async (req, res) => {
-    const [result] = await pool.query("SELECT id, name, email, password, date_of_birth, profile_image_url FROM users");
-    console.log(result);
-    //res.send("Monje Financiero - Users");
-    res.json(result);
-});
-
-app.post("/userTestInsert", async (req, res) => {
-    const { id, name, email, password, date_of_birth, profile_image_url } = req.body;
-    try {
-        const [result] = await pool.query("CALL InsertUser(?, ?, ?, ?, ?, ?)", [id, name, email, password, date_of_birth, profile_image_url]);
-        console.log(result);
-        res.json(result);
-    } catch (error) {
-        console.error('Error details:', error);
-        res.status(500).json({ error: 'Error inserting user' });
-    }
-});
+// Rutas
+app.use("/users", usersRoutes);
+app.use("/categories", categoriesRoutes);
+app.use("/expenses", expensesRoutes);
+app.use("/budgets", budgetsRoutes);
+app.use("/reports", reportsRoutes);
+app.use("/meta", metaRoutes);
 
 app.listen(PORT, () => {
     console.log("Servidor escuchando en el puerto", PORT);
