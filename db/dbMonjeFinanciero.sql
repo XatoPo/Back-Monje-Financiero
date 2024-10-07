@@ -1,3 +1,6 @@
+-- Drop Data Base
+DROP DATABASE IF EXISTS dbMonjeFinanciero;
+
 -- Crear base de datos
 CREATE DATABASE dbMonjeFinanciero;
 
@@ -20,7 +23,8 @@ CREATE TABLE Categories (
     user_id VARCHAR(36) NOT NULL,                    -- User ID associated with the category (Foreign Key)
     name VARCHAR(100) NOT NULL,                      -- Name of the category
     color VARCHAR(7) NOT NULL,                       -- Color associated with the category (e.g., HEX code)
-    icon_text CHAR(1)                                -- Text emoji for icon category
+    icon_text CHAR(1),                                -- Text emoji for icon category
+    FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
 );
 
 -- Crear tabla Expenses
@@ -32,8 +36,8 @@ CREATE TABLE Expenses (
     category_id VARCHAR(36) NOT NULL,                -- Category ID associated with the expense (Foreign Key)
     date DATE NOT NULL,                              -- Date of the expense
     is_recurring BOOLEAN NOT NULL,                    -- Indicates if the expense is recurring
-    FOREIGN KEY (user_id) REFERENCES Users(id),     -- Foreign key constraint
-    FOREIGN KEY (category_id) REFERENCES Categories(id)  -- Foreign key constraint
+    FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES Categories(id) ON DELETE CASCADE
 );
 
 -- Crear tabla Budgets
@@ -44,8 +48,8 @@ CREATE TABLE Budgets (
     budget_limit DECIMAL(10, 2) NOT NULL CHECK (budget_limit >= 0), -- Limit amount of the budget
     category_id VARCHAR(36) NOT NULL,                -- Category ID associated with the budget (Foreign Key)
     period ENUM('weekly', 'monthly', 'yearly') NOT NULL, -- Budget period
-    FOREIGN KEY (user_id) REFERENCES Users(id),     -- Foreign key constraint
-    FOREIGN KEY (category_id) REFERENCES Categories(id)  -- Foreign key constraint
+    FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES Categories(id) ON DELETE CASCADE
 );
 
 -- Crear tabla Reports
@@ -56,7 +60,7 @@ CREATE TABLE Reports (
     end_date DATE NOT NULL,                          -- End date of the report
     total_expenses DECIMAL(10, 2) NOT NULL,         -- Total expenses in the report
     category_breakdown JSON NOT NULL,                -- Breakdown of expenses by category (JSON type)
-    FOREIGN KEY (user_id) REFERENCES Users(id)      -- Foreign key constraint
+    FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
 );
 
 -- Crear tabla Meta
@@ -66,7 +70,7 @@ CREATE TABLE Meta (
     target_amount DECIMAL(10, 2) NOT NULL CHECK (target_amount >= 0), -- Target amount for savings or expenses
     achieved_amount DECIMAL(10, 2) NOT NULL CHECK (achieved_amount >= 0), -- Amount achieved towards the target
     deadline DATE NOT NULL,                          -- Deadline for achieving the target
-    FOREIGN KEY (user_id) REFERENCES Users(id)      -- Foreign key constraint
+    FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
 );
 
 -- Test Data
@@ -143,19 +147,496 @@ INSERT INTO Meta (id, user_id, target_amount, achieved_amount, deadline) VALUES
 ('MT010', 'US001', 3200.00, 1600.00, '2025-09-30');
 
 -- Procedures
+-- -- User
 DELIMITER //
 
-CREATE PROCEDURE InsertUser(
-    IN p_id VARCHAR(50),
+CREATE PROCEDURE RegisterUser(
     IN p_name VARCHAR(100),
     IN p_email VARCHAR(100),
-    IN p_password VARCHAR(100),
+    IN p_password VARCHAR(255),
     IN p_date_of_birth DATE,
     IN p_profile_image_url VARCHAR(255)
 )
 BEGIN
-    INSERT INTO users (id, name, email, password, date_of_birth, profile_image_url)
-    VALUES (p_id, p_name, p_email, p_password, p_date_of_birth, p_profile_image_url);
+    DECLARE new_id VARCHAR(36);
+    SET new_id = UUID();
+
+    IF EXISTS (SELECT 1 FROM Users WHERE email = p_email) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Email already exists.';
+    END IF;
+
+    IF DATE_ADD(p_date_of_birth, INTERVAL 18 YEAR) > CURDATE() THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'User must be at least 18 years old.';
+    END IF;
+
+    INSERT INTO Users (id, name, email, password, date_of_birth, profile_image_url) 
+    VALUES (new_id, p_name, p_email, p_password, p_date_of_birth, p_profile_image_url);
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE GetUser(
+    IN p_id VARCHAR(36)
+)
+BEGIN
+    SELECT * FROM Users WHERE id = p_id;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE LoginUser(
+    IN p_email VARCHAR(100),
+    IN p_password VARCHAR(255)
+)
+BEGIN
+    DECLARE user_count INT;
+
+    SELECT COUNT(*) INTO user_count FROM Users WHERE email = p_email AND password = p_password;
+
+    IF user_count = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Invalid email or password.';
+    END IF;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE UpdateUser(
+    IN p_id VARCHAR(36),
+    IN p_name VARCHAR(100),
+    IN p_email VARCHAR(100),
+    IN p_password VARCHAR(255),
+    IN p_date_of_birth DATE,
+    IN p_profile_image_url VARCHAR(255)
+)
+BEGIN
+    IF EXISTS (SELECT 1 FROM Users WHERE id = p_id) THEN
+        UPDATE Users
+        SET name = p_name,
+            email = p_email,
+            password = p_password,
+            date_of_birth = p_date_of_birth,
+            profile_image_url = p_profile_image_url
+        WHERE id = p_id;
+    ELSE
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'User not found.';
+    END IF;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE DeleteUser(
+    IN p_id VARCHAR(36)
+)
+BEGIN
+    IF EXISTS (SELECT 1 FROM Users WHERE id = p_id) THEN
+        DELETE FROM Users WHERE id = p_id;
+    ELSE
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'User not found.';
+    END IF;
+END //
+
+DELIMITER ;
+
+-- -- Category
+DELIMITER //
+
+CREATE PROCEDURE InsertCategory(
+    IN p_user_id VARCHAR(36),
+    IN p_name VARCHAR(100),
+    IN p_color VARCHAR(7),
+    IN p_icon_text CHAR(1)
+)
+BEGIN
+    DECLARE new_id VARCHAR(36);
+    SET new_id = UUID();
+
+    IF EXISTS (SELECT 1 FROM Categories WHERE name = p_name AND user_id = p_user_id) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Category name already exists for this user.';
+    END IF;
+
+    INSERT INTO Categories (id, user_id, name, color, icon_text)
+    VALUES (new_id, p_user_id, p_name, p_color, p_icon_text);
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE GetCategory(
+    IN p_id VARCHAR(36)
+)
+BEGIN
+    SELECT * FROM Categories WHERE id = p_id;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE GetAllCategories()
+BEGIN
+    SELECT * FROM Categories;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE UpdateCategory(
+    IN p_id VARCHAR(36),
+    IN p_name VARCHAR(100),
+    IN p_color VARCHAR(7),
+    IN p_icon_text CHAR(1)
+)
+BEGIN
+    IF EXISTS (SELECT 1 FROM Categories WHERE id = p_id) THEN
+        UPDATE Categories
+        SET name = p_name,
+            color = p_color,
+            icon_text = p_icon_text
+        WHERE id = p_id;
+    ELSE
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Category not found.';
+    END IF;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE DeleteCategory(
+    IN p_id VARCHAR(36)
+)
+BEGIN
+    IF EXISTS (SELECT 1 FROM Categories WHERE id = p_id) THEN
+        DELETE FROM Categories WHERE id = p_id;
+    ELSE
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Category not found.';
+    END IF;
+END //
+
+DELIMITER ;
+
+-- -- Expense
+DELIMITER //
+
+CREATE PROCEDURE InsertExpense(
+    IN p_user_id VARCHAR(36),
+    IN p_description VARCHAR(255),
+    IN p_amount DECIMAL(10, 2),
+    IN p_category_id VARCHAR(36),
+    IN p_date DATE,
+    IN p_is_recurring BOOLEAN
+)
+BEGIN
+    DECLARE new_id VARCHAR(36);
+    SET new_id = UUID();
+
+    INSERT INTO Expenses (id, user_id, description, amount, category_id, date, is_recurring)
+    VALUES (new_id, p_user_id, p_description, p_amount, p_category_id, p_date, p_is_recurring);
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE GetExpense(
+    IN p_id VARCHAR(36)
+)
+BEGIN
+    SELECT * FROM Expenses WHERE id = p_id;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE GetAllExpenses()
+BEGIN
+    SELECT * FROM Expenses;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE UpdateExpense(
+    IN p_id VARCHAR(36),
+    IN p_description VARCHAR(255),
+    IN p_amount DECIMAL(10, 2),
+    IN p_category_id VARCHAR(36),
+    IN p_date DATE,
+    IN p_is_recurring BOOLEAN
+)
+BEGIN
+    IF EXISTS (SELECT 1 FROM Expenses WHERE id = p_id) THEN
+        UPDATE Expenses
+        SET description = p_description,
+            amount = p_amount,
+            category_id = p_category_id,
+            date = p_date,
+            is_recurring = p_is_recurring
+        WHERE id = p_id;
+    ELSE
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Expense not found.';
+    END IF;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE DeleteExpense(
+    IN p_id VARCHAR(36)
+)
+BEGIN
+    IF EXISTS (SELECT 1 FROM Expenses WHERE id = p_id) THEN
+        DELETE FROM Expenses WHERE id = p_id;
+    ELSE
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Expense not found.';
+    END IF;
+END //
+
+DELIMITER ;
+
+-- -- Budget
+DELIMITER //
+
+CREATE PROCEDURE InsertBudget(
+    IN p_user_id VARCHAR(36),
+    IN p_name VARCHAR(100),
+    IN p_budget_limit DECIMAL(10, 2),
+    IN p_category_id VARCHAR(36),
+    IN p_period ENUM('weekly', 'monthly', 'yearly')
+)
+BEGIN
+    DECLARE new_id VARCHAR(36);
+    SET new_id = UUID();
+
+    INSERT INTO Budgets (id, user_id, name, budget_limit, category_id, period)
+    VALUES (new_id, p_user_id, p_name, p_budget_limit, p_category_id, p_period);
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE GetBudget(
+    IN p_id VARCHAR(36)
+)
+BEGIN
+    SELECT * FROM Budgets WHERE id = p_id;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE GetAllBudgets()
+BEGIN
+    SELECT * FROM Budgets;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE UpdateBudget(
+    IN p_id VARCHAR(36),
+    IN p_name VARCHAR(100),
+    IN p_budget_limit DECIMAL(10, 2),
+    IN p_category_id VARCHAR(36),
+    IN p_period ENUM('weekly', 'monthly', 'yearly')
+)
+BEGIN
+    IF EXISTS (SELECT 1 FROM Budgets WHERE id = p_id) THEN
+        UPDATE Budgets
+        SET name = p_name,
+            budget_limit = p_budget_limit,
+            category_id = p_category_id,
+            period = p_period
+        WHERE id = p_id;
+    ELSE
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Budget not found.';
+    END IF;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE DeleteBudget(
+    IN p_id VARCHAR(36)
+)
+BEGIN
+    IF EXISTS (SELECT 1 FROM Budgets WHERE id = p_id) THEN
+        DELETE FROM Budgets WHERE id = p_id;
+    ELSE
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Budget not found.';
+    END IF;
+END //
+
+DELIMITER ;
+
+-- -- Report
+DELIMITER //
+
+CREATE PROCEDURE InsertReport(
+    IN p_user_id VARCHAR(36),
+    IN p_start_date DATE,
+    IN p_end_date DATE,
+    IN p_total_expenses DECIMAL(10, 2),
+    IN p_category_breakdown JSON
+)
+BEGIN
+    DECLARE new_id VARCHAR(36);
+    SET new_id = UUID();
+
+    INSERT INTO Reports (id, user_id, start_date, end_date, total_expenses, category_breakdown)
+    VALUES (new_id, p_user_id, p_start_date, p_end_date, p_total_expenses, p_category_breakdown);
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE GetReport(
+    IN p_id VARCHAR(36)
+)
+BEGIN
+    SELECT * FROM Reports WHERE id = p_id;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE GetAllReports()
+BEGIN
+    SELECT * FROM Reports;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE UpdateReport(
+    IN p_id VARCHAR(36),
+    IN p_start_date DATE,
+    IN p_end_date DATE,
+    IN p_total_expenses DECIMAL(10, 2),
+    IN p_category_breakdown JSON
+)
+BEGIN
+    IF EXISTS (SELECT 1 FROM Reports WHERE id = p_id) THEN
+        UPDATE Reports
+        SET start_date = p_start_date,
+            end_date = p_end_date,
+            total_expenses = p_total_expenses,
+            category_breakdown = p_category_breakdown
+        WHERE id = p_id;
+    ELSE
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Report not found.';
+    END IF;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE DeleteReport(
+    IN p_id VARCHAR(36)
+)
+BEGIN
+    IF EXISTS (SELECT 1 FROM Reports WHERE id = p_id) THEN
+        DELETE FROM Reports WHERE id = p_id;
+    ELSE
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Report not found.';
+    END IF;
+END //
+
+DELIMITER ;
+
+-- -- Meta
+DELIMITER //
+
+CREATE PROCEDURE InsertMeta(
+    IN p_user_id VARCHAR(36),
+    IN p_target_amount DECIMAL(10, 2),
+    IN p_achieved_amount DECIMAL(10, 2),
+    IN p_deadline DATE
+)
+BEGIN
+    DECLARE new_id VARCHAR(36);
+    SET new_id = UUID();
+
+    INSERT INTO Meta (id, user_id, target_amount, achieved_amount, deadline)
+    VALUES (new_id, p_user_id, p_target_amount, p_achieved_amount, p_deadline);
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE GetMeta(
+    IN p_id VARCHAR(36)
+)
+BEGIN
+    SELECT * FROM Meta WHERE id = p_id;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE GetAllMeta()
+BEGIN
+    SELECT * FROM Meta;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE UpdateMeta(
+    IN p_id VARCHAR(36),
+    IN p_target_amount DECIMAL(10, 2),
+    IN p_achieved_amount DECIMAL(10, 2),
+    IN p_deadline DATE
+)
+BEGIN
+    IF EXISTS (SELECT 1 FROM Meta WHERE id = p_id) THEN
+        UPDATE Meta
+        SET target_amount = p_target_amount,
+            achieved_amount = p_achieved_amount,
+            deadline = p_deadline
+        WHERE id = p_id;
+    ELSE
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Meta not found.';
+    END IF;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE DeleteMeta(
+    IN p_id VARCHAR(36)
+)
+BEGIN
+    IF EXISTS (SELECT 1 FROM Meta WHERE id = p_id) THEN
+        DELETE FROM Meta WHERE id = p_id;
+    ELSE
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Meta not found.';
+    END IF;
 END //
 
 DELIMITER ;

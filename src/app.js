@@ -25,10 +25,7 @@ app.get("/usersTest", async (req, res) => {
 app.post("/userTestInsert", async (req, res) => {
     const { id, name, email, password, date_of_birth, profile_image_url } = req.body;
     try {
-        const [result] = await pool.query(
-            "INSERT INTO users (id, name, email, password, date_of_birth, profile_image_url) VALUES (?, ?, ?, ?, ?, ?)", 
-            [id, name, email, password, date_of_birth, profile_image_url]
-        );
+        const [result] = await pool.query("CALL InsertUser(?, ?, ?, ?, ?, ?)", [id, name, email, password, date_of_birth, profile_image_url]);
         console.log(result);
         res.json(result);
     } catch (error) {
