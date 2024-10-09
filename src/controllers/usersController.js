@@ -44,9 +44,9 @@ export const loginUser = async (req, res) => {
 
 export const updateUser = async (req, res) => {
     const { id } = req.params;
-    const { name, email, password, date_of_birth, profile_image_url } = req.body;
+    const { name, profile_image_url } = req.body;
     try {
-        const [result] = await pool.query("CALL UpdateUser(?, ?, ?, ?, ?, ?)", [id, name, email, password, date_of_birth, profile_image_url]);
+        const [result] = await pool.query("CALL UpdateUser(?, ?, ?)", [id, name, profile_image_url]);
         res.status(200).json(result);
     } catch (error) {
         res.status(500).json({ error: error.message });

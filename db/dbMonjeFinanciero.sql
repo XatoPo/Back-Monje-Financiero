@@ -211,18 +211,12 @@ DELIMITER //
 CREATE PROCEDURE UpdateUser(
     IN p_id VARCHAR(36),
     IN p_name VARCHAR(100),
-    IN p_email VARCHAR(100),
-    IN p_password VARCHAR(255),
-    IN p_date_of_birth DATE,
     IN p_profile_image_url VARCHAR(255)
 )
 BEGIN
     IF EXISTS (SELECT 1 FROM Users WHERE id = p_id) THEN
         UPDATE Users
         SET name = p_name,
-            email = p_email,
-            password = p_password,
-            date_of_birth = p_date_of_birth,
             profile_image_url = p_profile_image_url
         WHERE id = p_id;
     ELSE
@@ -548,6 +542,23 @@ BEGIN
     ELSE
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Report not found.';
     END IF;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE GetReportsByDateRange(
+    IN p_user_id VARCHAR(36),
+    IN p_start_date DATE,
+    IN p_end_date DATE
+)
+BEGIN
+    SELECT * 
+    FROM Reports 
+    WHERE user_id = p_user_id 
+    AND start_date >= p_start_date 
+    AND end_date <= p_end_date;
 END //
 
 DELIMITER ;
