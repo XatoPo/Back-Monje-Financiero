@@ -49,3 +49,31 @@ export const deleteReport = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+export const getReportData = async (req, res) => {
+    const { user_id, start_date, end_date } = req.query;
+    try {
+        const [result] = await pool.query(
+            "CALL GenerateExpenseReport(?, ?, ?)", 
+            [user_id, start_date, end_date]
+        );
+
+        const categoryBreakdown = []; // Desglose de gastos por categoría
+        let totalExpenses = 0;
+
+        result.forEach(row => {
+            categoryBreakdown.push({
+                category: row.category_name,
+                amount: row.total_amount
+            });
+            totalExpenses += row.total_amount;
+        });
+
+        res.status(200).json({
+            total_expenses: totalExpenses,
+            category_breakdown: categoryBreakdown
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};

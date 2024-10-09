@@ -565,6 +565,31 @@ DELIMITER ;
 
 DELIMITER //
 
+CREATE PROCEDURE GenerateExpenseReport(
+    IN p_user_id VARCHAR(36),
+    IN p_start_date DATE,
+    IN p_end_date DATE
+)
+BEGIN
+    SELECT 
+        c.name AS category_name, 
+        SUM(e.amount) AS total_amount
+    FROM 
+        Expenses e
+    INNER JOIN 
+        Categories c ON e.category_id = c.id
+    WHERE 
+        e.user_id = p_user_id 
+        AND e.date BETWEEN p_start_date AND p_end_date
+    GROUP BY 
+        c.name;
+
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
 CREATE PROCEDURE DeleteReport(
     IN p_id VARCHAR(36)
 )
