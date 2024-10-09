@@ -158,17 +158,34 @@ CREATE PROCEDURE RegisterUser(
     IN p_profile_image_url VARCHAR(255)
 )
 BEGIN
-    DECLARE new_id VARCHAR(36);
-    SET new_id = UUID();
+    DECLARE new_id VARCHAR(10);
+    DECLARE last_id VARCHAR(10);
+    DECLARE numeric_part INT;
 
+    -- Verificar si el correo electrónico ya existe
     IF EXISTS (SELECT 1 FROM Users WHERE email = p_email) THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Email already exists.';
     END IF;
 
+    -- Verificar si el usuario tiene al menos 18 años
     IF DATE_ADD(p_date_of_birth, INTERVAL 18 YEAR) > CURDATE() THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'User must be at least 18 years old.';
     END IF;
 
+    -- Obtener el último ID
+    SELECT id INTO last_id FROM Users ORDER BY id DESC LIMIT 1;
+
+    -- Extraer la parte numérica y aumentar en uno
+    IF last_id IS NOT NULL THEN
+        SET numeric_part = CAST(SUBSTRING(last_id, 3) AS UNSIGNED) + 1;
+    ELSE
+        SET numeric_part = 1; -- Si no hay usuarios, empezar desde 1
+    END IF;
+
+    -- Formatear el nuevo ID
+    SET new_id = CONCAT('US', LPAD(numeric_part, 3, '0'));
+
+    -- Insertar el nuevo usuario
     INSERT INTO Users (id, name, email, password, date_of_birth, profile_image_url) 
     VALUES (new_id, p_name, p_email, p_password, p_date_of_birth, p_profile_image_url);
 END //
@@ -251,13 +268,29 @@ CREATE PROCEDURE InsertCategory(
     IN p_icon_text VARCHAR(10)
 )
 BEGIN
-    DECLARE new_id VARCHAR(36);
-    SET new_id = UUID();
+    DECLARE new_id VARCHAR(10);
+    DECLARE last_id VARCHAR(10);
+    DECLARE numeric_part INT;
 
+    -- Verificar si el nombre de la categoría ya existe para este usuario
     IF EXISTS (SELECT 1 FROM Categories WHERE name = p_name AND user_id = p_user_id) THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Category name already exists for this user.';
     END IF;
 
+    -- Obtener el último ID
+    SELECT id INTO last_id FROM Categories WHERE user_id = p_user_id ORDER BY id DESC LIMIT 1;
+
+    -- Extraer la parte numérica y aumentar en uno
+    IF last_id IS NOT NULL THEN
+        SET numeric_part = CAST(SUBSTRING(last_id, 3) AS UNSIGNED) + 1;
+    ELSE
+        SET numeric_part = 1; -- Si no hay categorías, empezar desde 1
+    END IF;
+
+    -- Formatear el nuevo ID
+    SET new_id = CONCAT('CT', LPAD(numeric_part, 3, '0'));
+
+    -- Insertar la nueva categoría
     INSERT INTO Categories (id, user_id, name, color, icon_text)
     VALUES (new_id, p_user_id, p_name, p_color, p_icon_text);
 END //
@@ -333,9 +366,24 @@ CREATE PROCEDURE InsertExpense(
     IN p_is_recurring BOOLEAN
 )
 BEGIN
-    DECLARE new_id VARCHAR(36);
-    SET new_id = UUID();
+    DECLARE new_id VARCHAR(10);
+    DECLARE last_id VARCHAR(10);
+    DECLARE numeric_part INT;
 
+    -- Obtener el último ID
+    SELECT id INTO last_id FROM Expenses ORDER BY id DESC LIMIT 1;
+
+    -- Extraer la parte numérica y aumentar en uno
+    IF last_id IS NOT NULL THEN
+        SET numeric_part = CAST(SUBSTRING(last_id, 3) AS UNSIGNED) + 1;
+    ELSE
+        SET numeric_part = 1; -- Si no hay gastos, empezar desde 1
+    END IF;
+
+    -- Formatear el nuevo ID
+    SET new_id = CONCAT('EP', LPAD(numeric_part, 3, '0'));
+
+    -- Insertar el nuevo gasto
     INSERT INTO Expenses (id, user_id, description, amount, category_id, date, is_recurring)
     VALUES (new_id, p_user_id, p_description, p_amount, p_category_id, p_date, p_is_recurring);
 END //
@@ -414,9 +462,24 @@ CREATE PROCEDURE InsertBudget(
     IN p_period ENUM('weekly', 'monthly', 'yearly')
 )
 BEGIN
-    DECLARE new_id VARCHAR(36);
-    SET new_id = UUID();
+    DECLARE new_id VARCHAR(10);
+    DECLARE last_id VARCHAR(10);
+    DECLARE numeric_part INT;
 
+    -- Obtener el último ID
+    SELECT id INTO last_id FROM Budgets ORDER BY id DESC LIMIT 1;
+
+    -- Extraer la parte numérica y aumentar en uno
+    IF last_id IS NOT NULL THEN
+        SET numeric_part = CAST(SUBSTRING(last_id, 3) AS UNSIGNED) + 1;
+    ELSE
+        SET numeric_part = 1; -- Si no hay presupuestos, empezar desde 1
+    END IF;
+
+    -- Formatear el nuevo ID
+    SET new_id = CONCAT('BU', LPAD(numeric_part, 3, '0'));
+
+    -- Insertar el nuevo presupuesto
     INSERT INTO Budgets (id, user_id, name, budget_limit, category_id, period)
     VALUES (new_id, p_user_id, p_name, p_budget_limit, p_category_id, p_period);
 END //
@@ -493,9 +556,24 @@ CREATE PROCEDURE InsertReport(
     IN p_category_breakdown JSON
 )
 BEGIN
-    DECLARE new_id VARCHAR(36);
-    SET new_id = UUID();
+    DECLARE new_id VARCHAR(10);
+    DECLARE last_id VARCHAR(10);
+    DECLARE numeric_part INT;
 
+    -- Obtener el último ID
+    SELECT id INTO last_id FROM Reports ORDER BY id DESC LIMIT 1;
+
+    -- Extraer la parte numérica y aumentar en uno
+    IF last_id IS NOT NULL THEN
+        SET numeric_part = CAST(SUBSTRING(last_id, 3) AS UNSIGNED) + 1;
+    ELSE
+        SET numeric_part = 1; -- Si no hay informes, empezar desde 1
+    END IF;
+
+    -- Formatear el nuevo ID
+    SET new_id = CONCAT('RP', LPAD(numeric_part, 3, '0'));
+
+    -- Insertar el nuevo informe
     INSERT INTO Reports (id, user_id, start_date, end_date, total_expenses, category_breakdown)
     VALUES (new_id, p_user_id, p_start_date, p_end_date, p_total_expenses, p_category_breakdown);
 END //
@@ -613,9 +691,24 @@ CREATE PROCEDURE InsertMeta(
     IN p_deadline DATE
 )
 BEGIN
-    DECLARE new_id VARCHAR(36);
-    SET new_id = UUID();
+    DECLARE new_id VARCHAR(10);
+    DECLARE last_id VARCHAR(10);
+    DECLARE numeric_part INT;
 
+    -- Obtener el último ID
+    SELECT id INTO last_id FROM Meta ORDER BY id DESC LIMIT 1;
+
+    -- Extraer la parte numérica y aumentar en uno
+    IF last_id IS NOT NULL THEN
+        SET numeric_part = CAST(SUBSTRING(last_id, 3) AS UNSIGNED) + 1;
+    ELSE
+        SET numeric_part = 1; -- Si no hay metas, empezar desde 1
+    END IF;
+
+    -- Formatear el nuevo ID
+    SET new_id = CONCAT('MT', LPAD(numeric_part, 3, '0'));
+
+    -- Insertar la nueva meta
     INSERT INTO Meta (id, user_id, target_amount, achieved_amount, deadline)
     VALUES (new_id, p_user_id, p_target_amount, p_achieved_amount, p_deadline);
 END //
