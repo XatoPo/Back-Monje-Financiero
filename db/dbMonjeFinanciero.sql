@@ -278,7 +278,7 @@ BEGIN
     END IF;
 
     -- Obtener el último ID
-    SELECT id INTO last_id FROM Categories WHERE user_id = p_user_id ORDER BY id DESC LIMIT 1;
+    SELECT id INTO last_id FROM Categories ORDER BY id DESC LIMIT 1;
 
     -- Extraer la parte numérica y aumentar en uno
     IF last_id IS NOT NULL THEN
