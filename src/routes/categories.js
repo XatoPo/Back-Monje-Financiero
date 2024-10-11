@@ -4,8 +4,8 @@ import { insertCategory, getCategory, getAllCategories, updateCategory, deleteCa
 const router = Router();
 
 router.post("/", insertCategory);
+router.get("/", getAllCategories);
 router.get("/:id", getCategory);
-router.get("/:id", getAllCategories);
 router.put("/:id", updateCategory);
 router.delete("/:id", deleteCategory);
 
