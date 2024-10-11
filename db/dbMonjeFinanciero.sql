@@ -319,6 +319,17 @@ DELIMITER ;
 
 DELIMITER //
 
+CREATE PROCEDURE GetAllCategoriesByUser(
+    IN p_user_id VARCHAR(36)
+)
+BEGIN
+    SELECT * FROM Categories WHERE user_id = p_user_id;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
 CREATE PROCEDURE UpdateCategory(
     IN p_id VARCHAR(36),
     IN p_name VARCHAR(100),
