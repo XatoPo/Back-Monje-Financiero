@@ -2,11 +2,30 @@ import { pool } from "../db.js";
 
 export const insertCategory = async (req, res) => {
     const { user_id, name, color, icon_text } = req.body;
+
+    // Validaciones básicas
+    if (!user_id || !name || !color || !icon_text) {
+        return res.status(400).json({ error: 'All fields are required.' });
+    }
+
     try {
         const [result] = await pool.query("CALL InsertCategory(?, ?, ?, ?)", [user_id, name, color, icon_text]);
+        
+        // Comprobar si se ha insertado correctamente
+        if (result.affectedRows === 0) {
+            return res.status(500).json({ error: 'Insertion failed, no rows affected.' });
+        }
+
         res.status(201).json(result);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('Error during insertion:', error); // Log del error en el servidor
+
+        // Manejo de errores específicos
+        if (error.message.includes('Category name already exists')) {
+            return res.status(409).json({ error: 'Category name already exists for this user.' });
+        } else {
+            return res.status(500).json({ error: 'An unexpected error occurred. Please try again later.' });
+        }
     }
 };
 
