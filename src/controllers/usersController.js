@@ -6,6 +6,7 @@ export const registerUser = async (req, res) => {
         const [result] = await pool.query("CALL RegisterUser(?, ?, ?, ?, ?)", [name, email, password, date_of_birth, profile_image_url]);
         res.status(201).json(result);
     } catch (error) {
+        console.error(error); // Agrega esto para ver errores en la consola
         res.status(500).json({ error: error.message });
     }
 };
@@ -16,6 +17,7 @@ export const getUser = async (req, res) => {
         const [result] = await pool.query("CALL GetUser(?)", [id]);
         res.status(200).json(result);
     } catch (error) {
+        console.error(error); // Agrega esto para ver errores en la consola
         res.status(500).json({ error: error.message });
     }
 };
@@ -38,6 +40,7 @@ export const loginUser = async (req, res) => {
             res.status(401).json({ error: 'Invalid email or password.' });
         }
     } catch (error) {
+        console.error(error); // Agrega esto para ver errores en la consola
         res.status(500).json({ error: error.message });
     }
 };
@@ -49,6 +52,7 @@ export const updateUser = async (req, res) => {
         const [result] = await pool.query("CALL UpdateUser(?, ?, ?)", [id, name, profile_image_url]);
         res.status(200).json(result);
     } catch (error) {
+        console.error(error); // Agrega esto para ver errores en la consola
         res.status(500).json({ error: error.message });
     }
 };
@@ -59,6 +63,7 @@ export const deleteUser = async (req, res) => {
         const [result] = await pool.query("CALL DeleteUser(?)", [id]);
         res.status(200).json(result);
     } catch (error) {
+        console.error(error); // Agrega esto para ver errores en la consola
         res.status(500).json({ error: error.message });
     }
 };

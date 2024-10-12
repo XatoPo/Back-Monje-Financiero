@@ -47,7 +47,6 @@ export const getAllCategories = async (req, res) => {
 
     try {
         const [result] = await pool.query("CALL GetAllCategoriesByUser(?)", [user_id]);
-        console.log(result); // Agrega esto para ver el resultado
         res.status(200).json(result);
     } catch (error) {
         console.error(error); // Agrega esto para ver errores en la consola
