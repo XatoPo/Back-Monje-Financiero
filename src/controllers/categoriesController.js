@@ -18,6 +18,7 @@ export const insertCategory = async (req, res) => {
 
         res.status(201).json(result);
     } catch (error) {
+        console.log(error);
         console.error('Error during insertion:', error); // Log del error en el servidor
 
         // Manejo de errores específicos
@@ -35,6 +36,7 @@ export const getCategory = async (req, res) => {
         const [result] = await pool.query("CALL GetCategory(?)", [id]);
         res.status(200).json(result);
     } catch (error) {
+        console.log(error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -49,6 +51,7 @@ export const getAllCategories = async (req, res) => {
         const [result] = await pool.query("CALL GetAllCategoriesByUser(?)", [user_id]);
         res.status(200).json(result);
     } catch (error) {
+        console.log(error);
         console.error(error); // Agrega esto para ver errores en la consola
         res.status(500).json({ error: error.message });
     }
@@ -61,6 +64,7 @@ export const updateCategory = async (req, res) => {
         const [result] = await pool.query("CALL UpdateCategory(?, ?, ?, ?)", [id, name, color, icon_text]);
         res.status(200).json(result);
     } catch (error) {
+        console.log(error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -71,6 +75,7 @@ export const deleteCategory = async (req, res) => {
         const [result] = await pool.query("CALL DeleteCategory(?)", [id]);
         res.status(200).json(result);
     } catch (error) {
+        console.log(error);
         res.status(500).json({ error: error.message });
     }
 };

@@ -7,6 +7,7 @@ export const registerUser = async (req, res) => {
         res.status(201).json(result);
     } catch (error) {
         console.error(error); // Agrega esto para ver errores en la consola
+        console.log(error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -18,6 +19,7 @@ export const getUser = async (req, res) => {
         res.status(200).json(result);
     } catch (error) {
         console.error(error); // Agrega esto para ver errores en la consola
+        console.log(error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -41,6 +43,7 @@ export const loginUser = async (req, res) => {
         }
     } catch (error) {
         console.error(error); // Agrega esto para ver errores en la consola
+        console.log(error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -53,6 +56,7 @@ export const updateUser = async (req, res) => {
         res.status(200).json(result);
     } catch (error) {
         console.error(error); // Agrega esto para ver errores en la consola
+        console.log(error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -64,6 +68,7 @@ export const deleteUser = async (req, res) => {
         res.status(200).json(result);
     } catch (error) {
         console.error(error); // Agrega esto para ver errores en la consola
+        console.log(error);
         res.status(500).json({ error: error.message });
     }
 };
