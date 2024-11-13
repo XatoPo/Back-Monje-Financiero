@@ -75,7 +75,7 @@ CREATE TABLE Meta (
 
 -- Test Data
 INSERT INTO Users (id, name, email, password, date_of_birth, profile_image_url) VALUES
-('US001', 'Flavio Villanueva', 'flavio@example.com', 'hashedpassword1', '1990-01-01', 'https://i.pravatar.cc/300'),
+('US001', 'Flavio Villanueva', 'flavio@example.com', 'lavacalola', '1990-01-01', 'https://i.pravatar.cc/300'),
 ('US002', 'Carlos Perez', 'carlos@example.com', 'hashedpassword2', '1992-02-02', 'https://i.pravatar.cc/300'),
 ('US003', 'Maria Lopez', 'maria@example.com', 'hashedpassword3', '1993-03-03', 'https://i.pravatar.cc/300'),
 ('US004', 'Ana Garcia', 'ana@example.com', 'hashedpassword4', '1988-04-04', 'https://i.pravatar.cc/300'),
