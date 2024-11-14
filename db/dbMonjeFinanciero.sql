@@ -1,11 +1,11 @@
 -- Drop Data Base
-DROP DATABASE IF EXISTS dbMonjeFinanciero;
+-- DROP DATABASE IF EXISTS dbMonjeFinanciero;
 
 -- Crear base de datos
-CREATE DATABASE dbMonjeFinanciero;
+-- CREATE DATABASE dbMonjeFinanciero;
 
 -- Seleccionar base de datos
-USE dbMonjeFinanciero;
+-- USE dbMonjeFinanciero;
 
 -- Crear tabla Users
 CREATE TABLE Users (
