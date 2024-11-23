@@ -423,6 +423,17 @@ DELIMITER ;
 
 DELIMITER //
 
+CREATE PROCEDURE GetAllExpensesByUser(
+    IN p_user_id VARCHAR(36)
+)
+BEGIN
+    SELECT * FROM Expenses WHERE user_id = p_user_id;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
 CREATE PROCEDURE UpdateExpense(
     IN p_id VARCHAR(36),
     IN p_description VARCHAR(255),
@@ -518,6 +529,17 @@ END //
 DELIMITER ;
 
 DELIMITER //
+
+DELIMITER //
+
+CREATE PROCEDURE GetAllBudgetsByUser(
+    IN p_user_id VARCHAR(36)
+)
+BEGIN
+    SELECT * FROM Budgets WHERE user_id = p_user_id;
+END //
+
+DELIMITER ;
 
 CREATE PROCEDURE UpdateBudget(
     IN p_id VARCHAR(36),
