@@ -73,6 +73,32 @@ CREATE TABLE Meta (
     FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
 );
 
+-- Crear tabla UserTokens
+CREATE TABLE UserTokens (
+    id VARCHAR(36) PRIMARY KEY,        -- El mismo ID del usuario
+    fcm_token VARCHAR(255) NOT NULL,   -- Token FCM del usuario
+    created_at TIMESTAMP DEFAULT NOW() -- Fecha de creación
+);
+
+-- Crear tabla UserSettings
+CREATE TABLE UserSettings (
+    user_id VARCHAR(36) NOT NULL,
+    notification_frequency VARCHAR(20) DEFAULT 'Diario',
+    notifications_enabled BOOLEAN DEFAULT true,
+    PRIMARY KEY (user_id),
+    FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
+);
+
+-- Crear tabla NotificationSettings
+CREATE TABLE NotificationSettings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    notification_frequency VARCHAR(20) NOT NULL, -- "Diario", "Semanal", "Mensual"
+    notifications_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    last_sent DATETIME, -- Para saber cuándo fue la última vez que se envió una notificación
+    FOREIGN KEY (user_id) REFERENCES Users(id) -- Asumiendo que hay una tabla de usuarios
+);
+
 -- Test Data
 INSERT INTO Users (id, name, email, password, date_of_birth, profile_image_url) VALUES
 ('US001', 'Flavio Villanueva', 'flavio@example.com', 'lavacalola', '1990-01-01', 'https://i.pravatar.cc/300'),
