@@ -7,7 +7,7 @@ const router = Router();
 router.post('/save-token', saveToken);
 
 // Ruta para enviar una notificación push a un usuario
-router.post('/send-daily-notifications', async (req, res) => {
+router.post('/send-push-notifications', async (req, res) => {
     // Lógica para obtener la configuración de los usuarios (por ejemplo, "Diario") y enviar notificaciones.
     try {
         const [users] = await pool.query("SELECT * FROM Users");
