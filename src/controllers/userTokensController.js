@@ -1,36 +1,6 @@
 import { pool } from "../db.js";
-import { google } from 'googleapis';
 import axios from 'axios';
-
-// Crear el cliente de Cloud Scheduler
-const scheduler = google.cloudscheduler('v1beta1');
-
-// Inicializa el cliente de autenticación de Google, usando el archivo de credenciales JSON
-const auth = new google.auth.GoogleAuth({
-    keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,  // Usar la variable de entorno
-    scopes: ['https://www.googleapis.com/auth/cloud-platform'],
-});
-
-// Función para obtener el token de acceso (Access Token)
-const getAccessToken = async () => {
-    try {
-        // Obtén el cliente autenticado
-        const authClient = await auth.getClient();
-
-        // Obtiene el token de acceso
-        const tokenResponse = await authClient.getAccessToken();
-
-        if (!tokenResponse || !tokenResponse.token) {
-            throw new Error('No se pudo obtener el token de acceso');
-        }
-
-        console.log("Token de acceso obtenido:", tokenResponse.token);  // Verifica el token
-        return tokenResponse.token;
-    } catch (error) {
-        console.error('Error al obtener el token de acceso:', error);
-        throw new Error('Error al obtener el token de acceso');
-    }
-};
+import cron from 'node-cron';  // Importa node-cron
 
 // Función para guardar o actualizar el token FCM en la base de datos
 export const saveToken = async (req, res) => {
@@ -59,101 +29,6 @@ export const saveToken = async (req, res) => {
     }
 };
 
-// Función para enviar la notificación push
-export const sendPushNotification = async (userId, title, body) => {
-    const [result] = await pool.query("SELECT fcm_token FROM UserTokens WHERE id = ?", [userId]);
-
-    if (result.length === 0) {
-        console.log("Token no encontrado para el usuario:", userId);
-        return;
-    }
-
-    const fcmToken = result[0].fcm_token;
-
-    const message = {
-        to: fcmToken,
-        notification: {
-            title: title,
-            body: body,
-        },
-        priority: "high",
-    };
-
-    const headers = {
-        "Authorization": `key=${YOUR_FCM_SERVER_KEY}`, // Asegúrate de reemplazarlo con tu clave de servidor FCM
-        "Content-Type": "application/json",
-    };
-
-    try {
-        const response = await axios.post("https://fcm.googleapis.com/fcm/send", message, { headers });
-        console.log("Notificación enviada:", response.data);
-        return response.data; // Devuelve la respuesta para seguir con el flujo
-    } catch (error) {
-        console.error("Error al enviar notificación:", error);
-        throw new Error('Error al enviar la notificación');
-    }
-};
-
-// Función para crear o actualizar un trabajo en Cloud Scheduler
-const createOrUpdateSchedulerJob = async (userId, notificationFrequency) => {
-    const jobName = `send-notification-job-${userId}`;
-
-    // Define el cronograma (frecuencia) del trabajo
-    let cronSchedule = '';
-    switch (notificationFrequency) {
-        case 'Diario':
-            cronSchedule = '0 0 * * *';  // A medianoche todos los días
-            break;
-        case 'Semanal':
-            cronSchedule = '0 0 * * 0';  // A medianoche los domingos
-            break;
-        case 'Mensual':
-            cronSchedule = '0 0 1 * *';  // A medianoche el primer día de cada mes
-            break;
-        default:
-            cronSchedule = '0 0 * * *';  // Predeterminado a diario
-    }
-
-    try {
-        const token = await getAccessToken();  // Obtener el Access Token
-
-        // Intentamos eliminar el trabajo existente si existe
-        await scheduler.projects.locations.jobs.delete({
-            name: `projects/monje-financiero/locations/us-central1/jobs/${jobName}`,
-        }).catch(err => {
-            console.log("No se encontró trabajo anterior, creando nuevo...");
-        });
-
-        // Creación del nuevo trabajo
-        await scheduler.projects.locations.jobs.create({
-            parent: 'projects/monje-financiero/locations/us-central1',
-            resource: {
-                name: jobName,
-                schedule: cronSchedule,
-                httpTarget: {
-                    uri: 'https://api-node-monje-299345047999.us-central1.run.app/user-tokens/send-push-notification',
-                    httpMethod: 'POST',
-                    body: JSON.stringify({ 
-                        userId, 
-                        title: "Notificación", 
-                        body: "Es hora de revisar tu cuenta"
-                    }),
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,  // Aquí pasa el Access Token
-                    },
-                },
-            },
-        });
-
-        console.log(`Trabajo programado creado o actualizado: ${jobName}`);
-    } catch (error) {
-        console.error('Error al crear o actualizar el trabajo de Cloud Scheduler:', error);
-    }
-};
-
-export default createOrUpdateSchedulerJob;
-
 // Función para actualizar la configuración de notificaciones
 export const updateNotificationSettings = async (req, res) => {
     const { userId, notificationFrequency, notificationsEnabled } = req.body;
@@ -163,32 +38,27 @@ export const updateNotificationSettings = async (req, res) => {
     }
 
     try {
-        // Actualizamos o insertamos la configuración de notificaciones
+        // Verificar si existe la configuración previa
         const [existingSettings] = await pool.query("SELECT * FROM UserSettings WHERE user_id = ?", [userId]);
 
         if (existingSettings.length > 0) {
-            // Si existen, actualizamos
+            // Si existe, actualizamos
             await pool.query(
                 `UPDATE UserSettings SET notification_frequency = ?, notifications_enabled = ? WHERE user_id = ?`,
                 [notificationFrequency, notificationsEnabled, userId]
             );
+            console.log(`Configuración de usuario ${userId} actualizada.`);
         } else {
-            // Si no existen, insertamos
+            // Si no existe, insertamos
             await pool.query(
                 `INSERT INTO UserSettings (user_id, notification_frequency, notifications_enabled) VALUES (?, ?, ?)`,
-
                 [userId, notificationFrequency, notificationsEnabled]
             );
+            console.log(`Configuración de usuario ${userId} guardada.`);
         }
 
-        // Llamamos a la función que crea o actualiza el trabajo en Cloud Scheduler
-        if (notificationsEnabled) {
-            // Si las notificaciones están habilitadas, creamos o actualizamos el trabajo de Cloud Scheduler
-            await createOrUpdateSchedulerJob(userId, notificationFrequency);
-        } else {
-            // Si las notificaciones están desactivadas, eliminamos el trabajo de Cloud Scheduler
-            await deleteSchedulerJob(userId);
-        }
+        // Después de la actualización, programamos el cron para este usuario
+        await scheduleNotificationForUser(userId, notificationFrequency, notificationsEnabled);
 
         return res.status(200).json({ message: 'Configuración de notificaciones actualizada correctamente' });
     } catch (error) {
@@ -197,16 +67,123 @@ export const updateNotificationSettings = async (req, res) => {
     }
 };
 
-// Función para eliminar el trabajo de Google Cloud Scheduler
-const deleteSchedulerJob = async (userId) => {
-    const jobName = `send-notification-job-${userId}`;
+// Función para programar una notificación para un usuario específico
+const scheduleNotificationForUser = async (userId, notificationFrequency, notificationsEnabled) => {
+    if (!notificationsEnabled) return;  // No programar si las notificaciones están deshabilitadas
+
+    const cronExpression = getCronExpression(notificationFrequency);
 
     try {
-        await scheduler.projects.locations.jobs.delete({
-            name: `projects/monje-financiero/locations/us-central1/jobs/${jobName}`,
+        // Limpiar cualquier cron existente para este usuario antes de crear uno nuevo
+        await clearUserCron(userId);
+
+        // Programar la nueva notificación con la expresión cron
+        cron.schedule(cronExpression, async () => {
+            console.log(`Ejecutando notificación para el usuario ${userId} con frecuencia ${notificationFrequency}...`);
+            const title = '¡Tú Monje Financiero te llama!';
+            const body = 'No te olvides de realizar el registro de tus gastos';
+            try {
+                await sendPushNotification(userId, title, body);
+            } catch (error) {
+                console.error('Error al enviar notificación:', error);
+            }
         });
-        console.log(`Trabajo de notificación eliminado para el usuario ${userId}`);
+
+        console.log(`Notificación programada para el usuario ${userId} con frecuencia ${notificationFrequency}.`);
     } catch (error) {
-        console.error(`No se pudo eliminar el trabajo de notificación para el usuario ${userId}:`, error);
+        console.error("Error al programar la notificación:", error);
     }
 };
+
+// Función para obtener la expresión cron según la frecuencia de notificación
+const getCronExpression = (notificationFrequency) => {
+    switch (notificationFrequency) {
+        case 'Diario':
+            return '13 9 * * *';  // Todos los días a las 3:40 AM hora de Perú (8:40 AM UTC)
+        case 'Semanal':
+            return '13 9 * * MON';  // Todos los lunes a las 3:40 AM hora de Perú (8:40 AM UTC)
+        case 'Mensual':
+            return '13 9 1 * *';  // El primer día de cada mes a las 3:40 AM hora de Perú (8:40 AM UTC)
+        default:
+            return '13 9 * * *';  // Por defecto, todos los días a las 3:40 AM hora de Perú (8:40 AM UTC)
+    }
+};
+
+// Función para eliminar los cron jobs programados de un usuario
+const clearUserCron = async (userId) => {
+    // Este es un lugar para que implementes la lógica para limpiar el cron existente, si tienes algún sistema para manejar eso.
+    // Para simplificar, no hay código aquí pero deberías almacenar y eliminar los cron jobs según el userId si es necesario.
+    console.log(`Limpiando cron para el usuario ${userId} (si es necesario).`);
+};
+
+// Función para enviar la notificación push
+export const sendPushNotification = async (userId, title, body) => {
+    try {
+        // Verificar si el token existe en la base de datos
+        const [result] = await pool.query("SELECT fcm_token FROM UserTokens WHERE id = ?", [userId]);
+
+        if (result.length === 0) {
+            console.log("Token no encontrado para el usuario:", userId);
+            return;
+        }
+
+        const fcmToken = result[0].fcm_token;
+
+        // Mensaje a enviar
+        const message = {
+            to: fcmToken,
+            notification: {
+                title: title,
+                body: body,
+            },
+            priority: "high",
+        };
+
+        const headers = {
+            "Authorization": `key=SbB8zeQgur4gqPO1hM79bQCQYVYsatBOUu-EL1L_vwY`,  // Tu clave FCM
+            "Content-Type": "application/json",
+        };
+
+        // Enviar notificación a FCM
+        console.log("Enviando notificación...");
+        const response = await axios.post("https://fcm.googleapis.com/fcm/send", message, { headers });
+
+        // Depuración adicional: detalles de la respuesta
+        console.log("Respuesta de FCM:", JSON.stringify(response.data, null, 2));
+
+        if (response.status === 200) {
+            console.log("Notificación enviada exitosamente:", response.data);
+            return response.data;
+        } else {
+            console.error("Error al enviar la notificación, respuesta no exitosa:", response.data);
+            throw new Error('Respuesta no exitosa de FCM');
+        }
+    } catch (error) {
+        console.error("Error al enviar la notificación:", error.message);
+        if (error.response) {
+            console.error("Detalles del error de FCM:", error.response.data);
+            console.error("Código de error:", error.response.status);
+        } else {
+            console.error("Detalles del error:", error);
+        }
+        throw new Error('Error al enviar la notificación');
+    }
+};
+
+
+
+// Llamar a la función scheduleNotifications al iniciar el servidor
+const scheduleNotifications = async () => {
+    const [users] = await pool.query("SELECT user_id, notification_frequency, notifications_enabled FROM UserSettings WHERE notifications_enabled = 1");
+
+    console.log('Usuarios habilitados para recibir notificaciones:', users);
+
+    // Programar el cron para cada usuario según su frecuencia de notificación
+    users.forEach(user => {
+        const { user_id, notification_frequency, notifications_enabled } = user;
+        scheduleNotificationForUser(user_id, notification_frequency, notifications_enabled);
+    });
+};
+
+// Ejecutar la función scheduleNotifications al iniciar el servidor
+scheduleNotifications();
