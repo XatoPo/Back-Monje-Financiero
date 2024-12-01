@@ -4,10 +4,15 @@ FROM node:18-alpine
 # Crea un directorio de trabajo en el contenedor
 WORKDIR /usr/src/app
 
-# Copia los archivos de tu proyecto
+# Copia los archivos de dependencias
 COPY package*.json ./
 RUN npm install
+
+# Copia el resto del código de la aplicación
 COPY . .
+
+# Copia el archivo JSON de Firebase en el contenedor
+COPY ./src/controllers/notification-monje-financiero-firebase-adminsdk-4nbbo-2554f58c99.json /usr/src/app/notification-monje-financiero-firebase-adminsdk-4nbbo-2554f58c99.json
 
 # Expone el puerto 8080 que Cloud Run necesita
 EXPOSE 8080

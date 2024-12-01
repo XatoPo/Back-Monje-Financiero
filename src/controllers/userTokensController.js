@@ -1,6 +1,35 @@
 import { pool } from "../db.js";
 import axios from 'axios';
 import cron from 'node-cron';  // Importa node-cron
+import { google } from 'googleapis';
+import fs from 'fs';
+import path from 'path';
+
+// Cargar las credenciales del servicio desde el archivo JSON
+const serviceAccount = JSON.parse(fs.readFileSync(path.resolve('notification-monje-financiero-firebase-adminsdk-4nbbo-2554f58c99.json'), 'utf8'));
+
+// Configurar la autenticación con las credenciales de la cuenta de servicio
+const auth = new google.auth.JWT(
+    serviceAccount.client_email,  // El correo de la cuenta de servicio
+    null,
+    serviceAccount.private_key,   // La clave privada
+    ['https://www.googleapis.com/auth/firebase.messaging']  // El alcance necesario para FCM
+);
+
+// Obtener el token de acceso OAuth 2.0
+async function getAccessToken() {
+    try {
+        // Autorizar la solicitud y obtener el token de acceso
+        const tokens = await auth.authorize();
+        console.log('Access Token:', tokens.access_token);
+        return tokens.access_token;  // Devuelve el token
+    } catch (error) {
+        console.error('Error obteniendo el token:', error);
+    }
+}
+
+// Mapa para almacenar los cron jobs de los usuarios
+const userCronJobs = {};
 
 // Función para guardar o actualizar el token FCM en la base de datos
 export const saveToken = async (req, res) => {
@@ -78,7 +107,7 @@ const scheduleNotificationForUser = async (userId, notificationFrequency, notifi
         await clearUserCron(userId);
 
         // Programar la nueva notificación con la expresión cron
-        cron.schedule(cronExpression, async () => {
+        const job = cron.schedule(cronExpression, async () => {
             console.log(`Ejecutando notificación para el usuario ${userId} con frecuencia ${notificationFrequency}...`);
             const title = '¡Tú Monje Financiero te llama!';
             const body = 'No te olvides de realizar el registro de tus gastos';
@@ -88,6 +117,9 @@ const scheduleNotificationForUser = async (userId, notificationFrequency, notifi
                 console.error('Error al enviar notificación:', error);
             }
         });
+
+        // Guardamos el cron job para poder limpiarlo luego
+        userCronJobs[userId] = job;
 
         console.log(`Notificación programada para el usuario ${userId} con frecuencia ${notificationFrequency}.`);
     } catch (error) {
@@ -99,26 +131,34 @@ const scheduleNotificationForUser = async (userId, notificationFrequency, notifi
 const getCronExpression = (notificationFrequency) => {
     switch (notificationFrequency) {
         case 'Diario':
-            return '13 9 * * *';  // Todos los días a las 3:40 AM hora de Perú (8:40 AM UTC)
+            return '10 0 * * *';  // Todos los días a las 7:10 PM hora de Perú (12:10 AM UTC)
         case 'Semanal':
-            return '13 9 * * MON';  // Todos los lunes a las 3:40 AM hora de Perú (8:40 AM UTC)
+            return '10 0 * * MON';  // Todos los lunes a las 7:10 PM hora de Perú (12:10 AM UTC)
         case 'Mensual':
-            return '13 9 1 * *';  // El primer día de cada mes a las 3:40 AM hora de Perú (8:40 AM UTC)
+            return '10 0 1 * *';  // El primer día de cada mes a las 7:10 PM hora de Perú (12:10 AM UTC)
         default:
-            return '13 9 * * *';  // Por defecto, todos los días a las 3:40 AM hora de Perú (8:40 AM UTC)
+            return '10 0 * * *';  // Por defecto, todos los días a las 7:10 PM hora de Perú (12:10 AM UTC)
     }
 };
 
 // Función para eliminar los cron jobs programados de un usuario
 const clearUserCron = async (userId) => {
-    // Este es un lugar para que implementes la lógica para limpiar el cron existente, si tienes algún sistema para manejar eso.
-    // Para simplificar, no hay código aquí pero deberías almacenar y eliminar los cron jobs según el userId si es necesario.
-    console.log(`Limpiando cron para el usuario ${userId} (si es necesario).`);
+    const cronJob = userCronJobs[userId];
+
+    if (cronJob) {
+        console.log(`Deteniendo cron para el usuario ${userId}.`);
+        cronJob.stop();  // Detenemos el cron job
+        delete userCronJobs[userId];  // Eliminamos el cron job del mapa
+    } else {
+        console.log(`No se encontró un cron job para el usuario ${userId}.`);
+    }
 };
 
 // Función para enviar la notificación push
 export const sendPushNotification = async (userId, title, body) => {
     try {
+        const token = await getAccessToken();  // Usamos await aquí
+
         // Verificar si el token existe en la base de datos
         const [result] = await pool.query("SELECT fcm_token FROM UserTokens WHERE id = ?", [userId]);
 
@@ -131,46 +171,36 @@ export const sendPushNotification = async (userId, title, body) => {
 
         // Mensaje a enviar
         const message = {
-            to: fcmToken,
-            notification: {
-                title: title,
-                body: body,
-            },
-            priority: "high",
+            "message": {
+                "token": fcmToken,
+                "notification": {
+                    "title": title,
+                    "body": body
+                }
+            }
         };
 
         const headers = {
-            "Authorization": `key=SbB8zeQgur4gqPO1hM79bQCQYVYsatBOUu-EL1L_vwY`,  // Tu clave FCM
+            "Authorization": `Bearer ${token}`,  // Tu clave FCM
             "Content-Type": "application/json",
         };
 
         // Enviar notificación a FCM
         console.log("Enviando notificación...");
-        const response = await axios.post("https://fcm.googleapis.com/fcm/send", message, { headers });
-
-        // Depuración adicional: detalles de la respuesta
-        console.log("Respuesta de FCM:", JSON.stringify(response.data, null, 2));
+        const response = await axios.post("https://fcm.googleapis.com/v1/projects/notification-monje-financiero/messages:send", message, { headers });
 
         if (response.status === 200) {
             console.log("Notificación enviada exitosamente:", response.data);
             return response.data;
         } else {
-            console.error("Error al enviar la notificación, respuesta no exitosa:", response.data);
+            console.error("Error al enviar la notificación:", response.data);
             throw new Error('Respuesta no exitosa de FCM');
         }
     } catch (error) {
         console.error("Error al enviar la notificación:", error.message);
-        if (error.response) {
-            console.error("Detalles del error de FCM:", error.response.data);
-            console.error("Código de error:", error.response.status);
-        } else {
-            console.error("Detalles del error:", error);
-        }
         throw new Error('Error al enviar la notificación');
     }
 };
-
-
 
 // Llamar a la función scheduleNotifications al iniciar el servidor
 const scheduleNotifications = async () => {
